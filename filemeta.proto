@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+option go_package = "github.com/ddirect/filemeta";
+
+message Attributes {
+	bytes hash = 1;
+	sfixed64 timeNs = 2;
+	int64 size = 3;
+}
