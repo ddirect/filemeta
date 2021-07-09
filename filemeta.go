@@ -1,8 +1,11 @@
 package filemeta
 
 import (
+	"errors"
 	"fmt"
 	"os"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type mode int
@@ -59,4 +62,21 @@ func Get(fileName string) (data Data, errOut error) {
 // Gets the metadata, refreshing it if necessary
 func Refresh(fileName string) (data Data, errOut error) {
 	return getCore(fileName, modeRefresh)
+}
+
+func customCore(fileName string, attrName string, data proto.Message, core func(string, string, proto.Message)) (err error) {
+	if attrName == "" {
+		return errors.New("attribute name cannot be empty")
+	}
+	defer handlePanic(&err)
+	core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, attrName), data)
+	return
+}
+
+func ReadCustom(fileName string, attrName string, data proto.Message) error {
+	return customCore(fileName, attrName, data, readXattr)
+}
+
+func WriteCustom(fileName string, attrName string, data proto.Message) error {
+	return customCore(fileName, attrName, data, writeXattr)
 }
