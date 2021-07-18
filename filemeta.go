@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 )
 
 type mode int
+
+type FetchFunc func(fileName string) (Data, error)
 
 const (
 	modeGet mode = iota
@@ -69,7 +72,7 @@ func customCore(fileName string, attrName string, data proto.Message, core func(
 		return errors.New("attribute name cannot be empty")
 	}
 	defer handlePanic(&err)
-	core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, attrName), data)
+	core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, strings.ToUpper(attrName)), data)
 	return
 }
 
