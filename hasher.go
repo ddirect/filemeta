@@ -3,6 +3,7 @@ package filemeta
 import (
 	"context"
 	"errors"
+	"hash"
 	"io"
 	"os"
 
@@ -14,12 +15,17 @@ const HashSize = blake2b.Size256
 
 var hashsem = semaphore.NewWeighted(4)
 
+func newHasher() hash.Hash {
+	gen, err := blake2b.New256(nil)
+	check(err)
+	return gen
+}
+
 func getFileHash(fileName string, expectedSize int64) []byte {
 	hashsem.Acquire(context.Background(), 1)
 	defer hashsem.Release(1)
 
-	gen, err := blake2b.New256(nil)
-	check(err)
+	gen := newHasher()
 	file, err := os.Open(fileName)
 	check(err)
 	defer file.Close()
