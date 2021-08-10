@@ -5,6 +5,7 @@ import (
 	"errors"
 	"hash/crc32"
 
+	"github.com/ddirect/check"
 	"golang.org/x/sys/unix"
 	"google.golang.org/protobuf/proto"
 )
@@ -28,13 +29,13 @@ func appendCrc(b []byte) []byte {
 func readXattr(fileName string, attrName string, data proto.Message) {
 	buf := make([]byte, 256)
 	siz, err := unix.Getxattr(fileName, attrName, buf)
-	check_det("getxattr", fileName, err)
-	check(proto.Unmarshal(removeCrc(buf[:siz]), data))
+	check.Efile("getxattr", fileName, err)
+	check.E(proto.Unmarshal(removeCrc(buf[:siz]), data))
 	return
 }
 
 func writeXattr(fileName string, attrName string, data proto.Message) {
 	buf, err := proto.Marshal(data)
-	check(err)
-	check_det("setxattr", fileName, unix.Setxattr(fileName, attrName, appendCrc(buf), 0))
+	check.E(err)
+	check.Efile("setxattr", fileName, unix.Setxattr(fileName, attrName, appendCrc(buf), 0))
 }

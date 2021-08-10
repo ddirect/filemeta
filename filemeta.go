@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ddirect/check"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -20,9 +21,9 @@ const (
 )
 
 func getCore(fileName string, m mode) (data Data, errOut error) {
-	defer handlePanic(&errOut)
+	defer check.Recover(&errOut)
 	st, err := os.Stat(fileName)
-	check(err)
+	check.E(err)
 	if !st.Mode().IsRegular() {
 		panic(fmt.Errorf("'%s' is not regular", fileName))
 	}
@@ -71,7 +72,7 @@ func customCore(fileName string, attrName string, data proto.Message, core func(
 	if attrName == "" {
 		return errors.New("attribute name cannot be empty")
 	}
-	defer handlePanic(&err)
+	defer check.Recover(&err)
 	core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, strings.ToUpper(attrName)), data)
 	return
 }

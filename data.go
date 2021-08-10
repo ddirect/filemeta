@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os"
 	"time"
+
+	"github.com/ddirect/check"
 )
 
 type Data struct {
@@ -15,21 +17,21 @@ type Data struct {
 }
 
 func (d *Data) Verify() (res bool, err error) {
-	defer handlePanic(&err)
+	defer check.Recover(&err)
 	res = bytes.Compare(d.Attr.Hash, getFileHash(d.Path, d.Info.Size())) == 0
 	return
 }
 
 func (d *Data) Rename(newPath string) (err error) {
-	defer handlePanic(&err)
-	check(os.Rename(d.Path, newPath))
+	defer check.Recover(&err)
+	check.E(os.Rename(d.Path, newPath))
 	d.Path = newPath
 	return
 }
 
 func (d *Data) SetTime(tim time.Time) (err error) {
-	defer handlePanic(&err)
-	check(os.Chtimes(d.Path, time.Now(), tim))
+	defer check.Recover(&err)
+	check.E(os.Chtimes(d.Path, time.Now(), tim))
 	if d.Attr != nil {
 		d.Attr.TimeNs = tim.UnixNano()
 		d.Attr.write(d.Path)

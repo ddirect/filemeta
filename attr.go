@@ -2,12 +2,14 @@ package filemeta
 
 import (
 	"time"
+
+	"github.com/ddirect/check"
 )
 
 const fileMetaAttr = "user.FILEMETA"
 
 func readAttributes(fileName string) (attr *Attributes, errOut error) {
-	defer handlePanic(&errOut)
+	defer check.Recover(&errOut)
 	// ensure an attribute is always created (it's used also in case of error)
 	attr = new(Attributes)
 	readXattr(fileName, fileMetaAttr, attr)

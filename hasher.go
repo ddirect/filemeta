@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/ddirect/check"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/sync/semaphore"
 )
@@ -17,7 +18,7 @@ var hashsem = semaphore.NewWeighted(4)
 
 func newHasher() hash.Hash {
 	gen, err := blake2b.New256(nil)
-	check(err)
+	check.E(err)
 	return gen
 }
 
@@ -27,9 +28,9 @@ func getFileHash(fileName string, expectedSize int64) []byte {
 
 	gen := newHasher()
 	file, err := os.Open(fileName)
-	check(err)
+	check.E(err)
 	defer file.Close()
-	if expectedSize != checkI64(io.Copy(gen, file)) {
+	if expectedSize != check.I64E(io.Copy(gen, file)) {
 		panic(errors.New("file size changed"))
 	}
 	return gen.Sum(nil)

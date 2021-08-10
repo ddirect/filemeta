@@ -3,6 +3,8 @@ package filemeta
 import (
 	"os"
 	"time"
+
+	"github.com/ddirect/check"
 )
 
 type FileWriter struct {
@@ -29,14 +31,14 @@ func NewFileWriter() FileWriter {
 			return err
 		},
 		func(fileTimeNs int64) (attr *Attributes, err error) {
-			defer handlePanic(&err)
-			check(file.Close())
+			defer check.Recover(&err)
+			check.E(file.Close())
 			attr = new(Attributes)
 			attr.Hash = gen.Sum(nil)
 			attr.TimeNs = fileTimeNs
 			attr.Size = size
 			attr.write(file.Name())
-			check(os.Chtimes(file.Name(), time.Now(), time.Unix(0, fileTimeNs)))
+			check.E(os.Chtimes(file.Name(), time.Now(), time.Unix(0, fileTimeNs)))
 			return
 		},
 	}
