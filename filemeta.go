@@ -16,6 +16,7 @@ type FetchFunc func(fileName string) (Data, error)
 
 const (
 	modeGet mode = iota
+	modeVerify
 	modeRefresh
 	modeInspect
 )
@@ -50,6 +51,9 @@ func getCore(fileName string, m mode) (data Data, errOut error) {
 	}
 
 	data.Attr = attr
+	if m == modeVerify {
+		data.verify()
+	}
 	return
 }
 
@@ -61,6 +65,11 @@ func Inspect(fileName string) (data Data, errOut error) {
 // Gets the metadata if available; if not available data.Attr is nil
 func Get(fileName string) (data Data, errOut error) {
 	return getCore(fileName, modeGet)
+}
+
+// Like get, but additional it verifies the hash (scrub)
+func Verify(fileName string) (data Data, errOut error) {
+	return getCore(fileName, modeVerify)
 }
 
 // Gets the metadata, refreshing it if necessary
