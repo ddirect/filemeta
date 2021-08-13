@@ -10,18 +10,18 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type mode int
+type Op int
 
 type FetchFunc func(fileName string) (Data, error)
 
 const (
-	modeGet mode = iota
-	modeVerify
-	modeRefresh
-	modeInspect
+	OpGet Op = iota
+	OpVerify
+	OpRefresh
+	OpInspect
 )
 
-func getCore(fileName string, m mode) (data Data, errOut error) {
+func Operation(m Op, fileName string) (data Data, errOut error) {
 	defer check.Recover(&errOut)
 	st, err := os.Stat(fileName)
 	check.E(err)
@@ -34,13 +34,13 @@ func getCore(fileName string, m mode) (data Data, errOut error) {
 	fileSize := st.Size()
 	fileTimeNs := st.ModTime().UnixNano()
 	attr, err := readAttributes(fileName)
-	if err != nil && m == modeInspect {
+	if err != nil && m == OpInspect {
 		errOut = err
 		return
 	}
 	if err != nil || attr.Size != fileSize || attr.TimeNs != fileTimeNs {
 		data.Changed = err == nil
-		if m != modeRefresh {
+		if m != OpRefresh {
 			return
 		}
 		attr.Hash = getFileHash(fileName, fileSize)
@@ -51,7 +51,7 @@ func getCore(fileName string, m mode) (data Data, errOut error) {
 	}
 
 	data.Attr = attr
-	if m == modeVerify {
+	if m == OpVerify {
 		data.verify()
 	}
 	return
@@ -59,22 +59,22 @@ func getCore(fileName string, m mode) (data Data, errOut error) {
 
 // Gets the metadata if available; returns an error if not
 func Inspect(fileName string) (data Data, errOut error) {
-	return getCore(fileName, modeInspect)
+	return Operation(OpInspect, fileName)
 }
 
 // Gets the metadata if available; if not available data.Attr is nil
 func Get(fileName string) (data Data, errOut error) {
-	return getCore(fileName, modeGet)
+	return Operation(OpGet, fileName)
 }
 
 // Like get, but additional it verifies the hash (scrub)
 func Verify(fileName string) (data Data, errOut error) {
-	return getCore(fileName, modeVerify)
+	return Operation(OpVerify, fileName)
 }
 
 // Gets the metadata, refreshing it if necessary
 func Refresh(fileName string) (data Data, errOut error) {
-	return getCore(fileName, modeRefresh)
+	return Operation(OpRefresh, fileName)
 }
 
 func customCore(fileName string, attrName string, data proto.Message, core func(string, string, proto.Message)) (err error) {
