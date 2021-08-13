@@ -1,7 +1,6 @@
 package filemeta
 
 import (
-	"context"
 	"errors"
 	"hash"
 	"io"
@@ -9,12 +8,7 @@ import (
 
 	"github.com/ddirect/check"
 	"golang.org/x/crypto/blake2b"
-	"golang.org/x/sync/semaphore"
 )
-
-const HashSize = blake2b.Size256
-
-var hashsem = semaphore.NewWeighted(4)
 
 func newHasher() hash.Hash {
 	gen, err := blake2b.New256(nil)
@@ -23,9 +17,6 @@ func newHasher() hash.Hash {
 }
 
 func getFileHash(fileName string, expectedSize int64) []byte {
-	hashsem.Acquire(context.Background(), 1)
-	defer hashsem.Release(1)
-
 	gen := newHasher()
 	file, err := os.Open(fileName)
 	check.E(err)
