@@ -10,19 +10,34 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+const HashSize = blake2b.Size256
+
 func newHasher() hash.Hash {
 	gen, err := blake2b.New256(nil)
 	check.E(err)
 	return gen
 }
 
-func getFileHash(fileName string, expectedSize int64) []byte {
-	gen := newHasher()
+func newHasherBuffer() []byte {
+	return make([]byte, 0x10000)
+}
+
+func getFileHash(fileName string, expectedSize int64) ([]byte, error) {
+	return hashCore(fileName, expectedSize, newHasher(), newHasherBuffer())
+}
+
+func hashCore(fileName string, expectedSize int64, gen hash.Hash, buf []byte) ([]byte, error) {
 	file, err := os.Open(fileName)
-	check.E(err)
-	defer file.Close()
-	if expectedSize != check.I64E(io.Copy(gen, file)) {
-		panic(errors.New("file size changed"))
+	if err != nil {
+		return nil, err
 	}
-	return gen.Sum(nil)
+	defer file.Close()
+	size, err := io.CopyBuffer(gen, file, buf)
+	if err != nil {
+		return nil, err
+	}
+	if expectedSize != size {
+		return nil, errors.New("file size changed")
+	}
+	return gen.Sum(nil), nil
 }

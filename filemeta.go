@@ -10,9 +10,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Op int
+type Op int8
 
-type FetchFunc func(fileName string) (Data, error)
+type FetchFunc func(fileName string) Data
 
 const (
 	OpGet Op = iota
@@ -21,21 +21,25 @@ const (
 	OpInspect
 )
 
-func Operation(m Op, fileName string) (data Data, errOut error) {
-	defer check.Recover(&errOut)
-	st, err := os.Stat(fileName)
-	check.E(err)
-	if !st.Mode().IsRegular() {
-		panic(fmt.Errorf("'%s' is not regular", fileName))
-	}
+func core(m Op, fileName string) (data Data) {
+	data.Operation = m
 	data.Path = fileName
+	st, err := os.Stat(fileName)
+	if err != nil {
+		data.Error = err
+		return
+	}
+	if !st.Mode().IsRegular() {
+		data.Error = fmt.Errorf("'%s' is not regular", fileName)
+		return
+	}
 	data.Info = st
 
 	fileSize := st.Size()
 	fileTimeNs := st.ModTime().UnixNano()
 	attr, err := readAttributes(fileName)
 	if err != nil && m == OpInspect {
-		errOut = err
+		data.Error = err
 		return
 	}
 	if err != nil || attr.Size != fileSize || attr.TimeNs != fileTimeNs {
@@ -43,37 +47,44 @@ func Operation(m Op, fileName string) (data Data, errOut error) {
 		if m != OpRefresh {
 			return
 		}
-		attr.Hash = getFileHash(fileName, fileSize)
 		attr.Size = fileSize
 		attr.TimeNs = fileTimeNs
-		attr.write(fileName)
-		data.Hashed = true
+		data.Attr = attr
+		data.hashNeeded = true
+		return
 	}
 
 	data.Attr = attr
-	if m == OpVerify {
-		data.verify()
+	data.hashNeeded = m == OpVerify
+	return
+}
+
+func Operation(m Op, fileName string) (data Data) {
+	defer check.Recover(&data.Error)
+	data = core(m, fileName)
+	if data.hashNeeded {
+		data.notifyHash(getFileHash(data.Path, data.Attr.Size))
 	}
 	return
 }
 
 // Gets the metadata if available; returns an error if not
-func Inspect(fileName string) (data Data, errOut error) {
+func Inspect(fileName string) Data {
 	return Operation(OpInspect, fileName)
 }
 
 // Gets the metadata if available; if not available data.Attr is nil
-func Get(fileName string) (data Data, errOut error) {
+func Get(fileName string) Data {
 	return Operation(OpGet, fileName)
 }
 
 // Like get, but additional it verifies the hash (scrub)
-func Verify(fileName string) (data Data, errOut error) {
+func Verify(fileName string) Data {
 	return Operation(OpVerify, fileName)
 }
 
 // Gets the metadata, refreshing it if necessary
-func Refresh(fileName string) (data Data, errOut error) {
+func Refresh(fileName string) Data {
 	return Operation(OpRefresh, fileName)
 }
 

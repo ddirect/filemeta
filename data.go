@@ -12,13 +12,12 @@ type Data struct {
 	Path         string
 	Info         os.FileInfo
 	Attr         *Attributes
+	Error        error
+	Operation    Op
 	Hashed       bool // the file has just been hashed
 	Changed      bool // the file had attributes, but they are no longer valid
 	VerifyFailed bool
-}
-
-func (d *Data) verify() {
-	d.VerifyFailed = bytes.Compare(d.Attr.Hash, getFileHash(d.Path, d.Info.Size())) != 0
+	hashNeeded   bool
 }
 
 func (d *Data) Rename(newPath string) (err error) {
@@ -36,4 +35,24 @@ func (d *Data) SetTime(tim time.Time) (err error) {
 		d.Attr.write(d.Path)
 	}
 	return
+}
+
+func (d *Data) notifyHash(hash []byte, err error) {
+	defer check.Recover(&d.Error)
+	if err == nil {
+		d.Hashed = true
+		switch d.Operation {
+		case OpRefresh:
+			d.Attr.Hash = hash
+			d.Attr.write(d.Path)
+		case OpVerify:
+			d.VerifyFailed = bytes.Compare(d.Attr.Hash, hash) != 0
+		}
+	} else {
+		d.Error = err
+		switch d.Operation {
+		case OpVerify:
+			d.VerifyFailed = true
+		}
+	}
 }
