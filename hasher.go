@@ -12,6 +12,13 @@ import (
 
 const HashSize = blake2b.Size256
 
+type HashKey [HashSize]byte
+
+func ToHashKey(x []byte) (k HashKey) {
+	copy(k[:], x)
+	return
+}
+
 func newHasher() hash.Hash {
 	gen, err := blake2b.New256(nil)
 	check.E(err)
