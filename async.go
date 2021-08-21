@@ -1,6 +1,7 @@
 package filemeta
 
 import (
+	"runtime"
 	"sync"
 )
 
@@ -10,6 +11,12 @@ type Async struct {
 }
 
 func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
+	if probeThreads < 1 {
+		probeThreads = runtime.NumCPU()
+	}
+	if hashThreads < 1 {
+		hashThreads = probeThreads
+	}
 	bufSize := probeThreads * 500
 	fileIn := make(chan string, bufSize)
 	dataOut := make(chan Data, bufSize)

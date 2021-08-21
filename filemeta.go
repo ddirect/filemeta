@@ -21,6 +21,20 @@ const (
 	OpInspect
 )
 
+var opStrings = []string{
+	"get",
+	"verify",
+	"refresh",
+	"inspect",
+}
+
+func OpString(op Op) string {
+	if uint(op) < uint(len(opStrings)) {
+		return opStrings[uint(op)]
+	}
+	return "<unknown>"
+}
+
 func core(m Op, fileName string) (data Data) {
 	data.Operation = m
 	data.Path = fileName
