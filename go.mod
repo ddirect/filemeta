@@ -8,6 +8,8 @@ replace github.com/ddirect/filetest => ../filetest
 
 replace github.com/ddirect/xrand => ../xrand
 
+replace github.com/ddirect/format => ../format
+
 require (
 	github.com/ddirect/check v0.0.0-00010101000000-000000000000
 	github.com/ddirect/filetest v0.0.0-00010101000000-000000000000

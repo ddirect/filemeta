@@ -42,8 +42,9 @@ func testOp(t *testing.T, op Op, base string, refFm filemap, stats ft.DirStats) 
 	if len(hashes) != stats.UniqueHashes {
 		t.Fatalf("hash count mismatch: %d != %d", len(hashes), stats.UniqueHashes)
 	}
-	if len(inodes) != stats.UniqueFiles {
-		t.Fatalf("unique file count mismatch: %d != %d", len(inodes), stats.UniqueFiles)
+	fileCount := stats.UniqueHashes + stats.ClonedFiles
+	if len(inodes) != fileCount {
+		t.Fatalf("unique file count mismatch: %d != %d", len(inodes), fileCount)
 	}
 }
 

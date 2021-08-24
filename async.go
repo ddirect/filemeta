@@ -11,6 +11,9 @@ type Async struct {
 }
 
 func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
+	if op == OpRefresh {
+		return AsyncMono(op)
+	}
 	if probeThreads < 1 {
 		probeThreads = runtime.NumCPU()
 	}
@@ -56,6 +59,25 @@ func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
 		wg1.Wait()
 		close(hashingIn)
 		wg2.Wait()
+		close(dataOut)
+	}()
+	return Async{fileIn, dataOut}
+}
+
+func AsyncMono(op Op) Async {
+	bufSize := 100
+	fileIn := make(chan string, bufSize)
+	dataOut := make(chan Data, bufSize)
+	go func() {
+		gen, hashBuf := newHasher(), newHasherBuffer()
+		for file := range fileIn {
+			data := core(op, file)
+			if data.hashNeeded {
+				gen.Reset()
+				data.notifyHash(hashCore(data.Path, data.Attr.Size, gen, hashBuf))
+			}
+			dataOut <- data
+		}
 		close(dataOut)
 	}()
 	return Async{fileIn, dataOut}
