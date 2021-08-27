@@ -5,6 +5,7 @@ import (
 	"hash"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/ddirect/check"
 	"golang.org/x/crypto/blake2b"
@@ -19,32 +20,42 @@ func ToHashKey(x []byte) (k HashKey) {
 	return
 }
 
-func newHasher() hash.Hash {
+func newHashGen() hash.Hash {
 	gen, err := blake2b.New256(nil)
 	check.E(err)
 	return gen
 }
 
-func newHasherBuffer() []byte {
-	return make([]byte, 0x10000)
+type hasher struct {
+	gen hash.Hash
+	buf []byte
 }
 
-func getFileHash(fileName string, expectedSize int64) ([]byte, error) {
-	return hashCore(fileName, expectedSize, newHasher(), newHasherBuffer())
+var hasherPool = sync.Pool{New: func() interface{} {
+	return &hasher{newHashGen(), make([]byte, 0x10000)}
+}}
+
+func getHasher() *hasher {
+	return hasherPool.Get().(*hasher)
 }
 
-func hashCore(fileName string, expectedSize int64, gen hash.Hash, buf []byte) ([]byte, error) {
+func (h *hasher) done() {
+	hasherPool.Put(h)
+}
+
+func (h *hasher) run(fileName string, expectedSize int64) ([]byte, error) {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
-	size, err := io.CopyBuffer(gen, file, buf)
+	h.gen.Reset()
+	size, err := io.CopyBuffer(h.gen, file, h.buf)
 	if err != nil {
 		return nil, err
 	}
 	if expectedSize != size {
 		return nil, errors.New("file size changed")
 	}
-	return gen.Sum(nil), nil
+	return h.gen.Sum(nil), nil
 }

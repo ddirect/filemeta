@@ -31,6 +31,7 @@ func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
 
 	for i := 0; i < probeThreads; i++ {
 		go func() {
+			defer wg1.Done()
 			for file := range fileIn {
 				data := core(op, file)
 				if data.hashNeeded {
@@ -39,19 +40,18 @@ func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
 					dataOut <- data
 				}
 			}
-			wg1.Done()
 		}()
 	}
 
 	for i := 0; i < hashThreads; i++ {
-		gen, hashBuf := newHasher(), newHasherBuffer()
 		go func() {
+			defer wg2.Done()
+			h := getHasher()
+			defer h.done()
 			for data := range hashingIn {
-				gen.Reset()
-				data.notifyHash(hashCore(data.Path, data.Attr.Size, gen, hashBuf))
+				data.notifyHash(h.run(data.Path, data.Attr.Size))
 				dataOut <- data
 			}
-			wg2.Done()
 		}()
 	}
 
@@ -69,12 +69,12 @@ func AsyncMono(op Op) Async {
 	fileIn := make(chan string, bufSize)
 	dataOut := make(chan Data, bufSize)
 	go func() {
-		gen, hashBuf := newHasher(), newHasherBuffer()
+		h := getHasher()
+		defer h.done()
 		for file := range fileIn {
 			data := core(op, file)
 			if data.hashNeeded {
-				gen.Reset()
-				data.notifyHash(hashCore(data.Path, data.Attr.Size, gen, hashBuf))
+				data.notifyHash(h.run(file, data.Attr.Size))
 			}
 			dataOut <- data
 		}

@@ -14,7 +14,7 @@ type FileWriter struct {
 }
 
 func NewFileWriter() FileWriter {
-	gen := newHasher()
+	gen := newHashGen()
 	var size int64
 	var file *os.File
 	return FileWriter{

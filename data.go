@@ -44,7 +44,7 @@ func (d *Data) notifyHash(hash []byte, err error) {
 		switch d.Operation {
 		case OpRefresh:
 			d.Attr.Hash = hash
-			d.Attr.write(d.Path)
+			d.writeAttr()
 		case OpVerify:
 			d.VerifyFailed = bytes.Compare(d.Attr.Hash, hash) != 0
 		}
@@ -55,4 +55,14 @@ func (d *Data) notifyHash(hash []byte, err error) {
 			d.VerifyFailed = true
 		}
 	}
+}
+
+func (d *Data) writeAttr() {
+	mode := d.Info.Mode().Perm()
+	neededMode := mode | 0200
+	if mode != neededMode {
+		check.E(os.Chmod(d.Path, neededMode))
+		defer check.DeferredE(func() error { return os.Chmod(d.Path, mode) })
+	}
+	d.Attr.write(d.Path)
 }

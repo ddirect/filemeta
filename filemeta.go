@@ -73,11 +73,12 @@ func core(m Op, fileName string) (data Data) {
 	return
 }
 
-func Operation(m Op, fileName string) (data Data) {
-	defer check.Recover(&data.Error)
-	data = core(m, fileName)
+func Operation(op Op, fileName string) (data Data) {
+	data = core(op, fileName)
 	if data.hashNeeded {
-		data.notifyHash(getFileHash(data.Path, data.Attr.Size))
+		h := getHasher()
+		defer h.done()
+		data.notifyHash(h.run(fileName, data.Attr.Size))
 	}
 	return
 }
