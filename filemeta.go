@@ -1,13 +1,9 @@
 package filemeta
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"strings"
 
-	"github.com/ddirect/check"
-	"google.golang.org/protobuf/proto"
+	"github.com/ddirect/sys"
 )
 
 type Op int8
@@ -28,48 +24,39 @@ var opStrings = []string{
 	"inspect",
 }
 
-func OpString(op Op) string {
+func (op Op) String() string {
 	if uint(op) < uint(len(opStrings)) {
 		return opStrings[uint(op)]
 	}
 	return "<unknown>"
 }
 
-func core(m Op, fileName string) (data Data) {
-	data.Operation = m
-	data.Path = fileName
-	st, err := os.Stat(fileName)
-	if err != nil {
-		data.Error = err
+func core(m Op, fileName string) (d Data) {
+	d.Operation = m
+	d.Path = fileName
+	if d.Info, d.Error = sys.Stat(fileName); d.Error != nil {
 		return
 	}
-	if !st.Mode().IsRegular() {
-		data.Error = fmt.Errorf("'%s' is not regular", fileName)
+	if !d.Info.Mode.IsRegular() {
+		d.Error = fmt.Errorf("'%s' is not regular", fileName)
 		return
 	}
-	data.Info = st
 
-	fileSize := st.Size()
-	fileTimeNs := st.ModTime().UnixNano()
-	attr, err := readAttributes(fileName)
+	attr, err := readAttr(fileName)
 	if err != nil && m == OpInspect {
-		data.Error = err
+		d.Error = err
 		return
 	}
-	if err != nil || attr.Size != fileSize || attr.TimeNs != fileTimeNs {
-		data.Changed = err == nil
+	if err != nil || attr.Size != d.Info.Size || attr.TimeNs != d.Info.ModTimeNs {
+		d.Changed = err == nil
 		if m != OpRefresh {
 			return
 		}
-		attr.Size = fileSize
-		attr.TimeNs = fileTimeNs
-		data.Attr = attr
-		data.hashNeeded = true
+		d.hashNeeded = true
 		return
 	}
-
-	data.Attr = attr
-	data.hashNeeded = m == OpVerify
+	d.Hash = attr.Hash
+	d.hashNeeded = m == OpVerify
 	return
 }
 
@@ -78,7 +65,7 @@ func Operation(op Op, fileName string) (data Data) {
 	if data.hashNeeded {
 		h := getHasher()
 		defer h.done()
-		data.notifyHash(h.run(fileName, data.Attr.Size))
+		data.notifyHash(h.run(fileName, data.Info.Size))
 	}
 	return
 }
@@ -103,6 +90,7 @@ func Refresh(fileName string) Data {
 	return Operation(OpRefresh, fileName)
 }
 
+/*
 func customCore(fileName string, attrName string, data proto.Message, core func(string, string, proto.Message)) (err error) {
 	if attrName == "" {
 		return errors.New("attribute name cannot be empty")
@@ -119,3 +107,4 @@ func ReadCustom(fileName string, attrName string, data proto.Message) error {
 func WriteCustom(fileName string, attrName string, data proto.Message) error {
 	return customCore(fileName, attrName, data, writeXattr)
 }
+*/

@@ -49,7 +49,7 @@ func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
 			h := getHasher()
 			defer h.done()
 			for data := range hashingIn {
-				data.notifyHash(h.run(data.Path, data.Attr.Size))
+				data.notifyHash(h.run(data.Path, data.Info.Size))
 				dataOut <- data
 			}
 		}()
@@ -74,7 +74,7 @@ func AsyncMono(op Op) Async {
 		for file := range fileIn {
 			data := core(op, file)
 			if data.hashNeeded {
-				data.notifyHash(h.run(file, data.Attr.Size))
+				data.notifyHash(h.run(file, data.Info.Size))
 			}
 			dataOut <- data
 		}

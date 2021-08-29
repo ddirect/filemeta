@@ -26,16 +26,29 @@ func appendCrc(b []byte) []byte {
 	return append(b, crc...)
 }
 
-func readXattr(fileName string, attrName string, data proto.Message) {
-	buf := make([]byte, 256)
+func readXattr(fileName string, attrName string, data proto.Message, buf []byte) []byte {
+	if cap(buf) > 0 {
+		buf = buf[:cap(buf)]
+	} else {
+		buf = make([]byte, 64)
+	}
+again:
 	siz, err := unix.Getxattr(fileName, attrName, buf)
+	if err == unix.ERANGE {
+		buf = make([]byte, len(buf)*3/2)
+		goto again
+	}
 	check.Efile("getxattr", fileName, err)
-	check.E(proto.Unmarshal(removeCrc(buf[:siz]), data))
-	return
+	buf = removeCrc(buf[:siz])
+	check.E(proto.Unmarshal(buf, data))
+	return buf
 }
 
-func writeXattr(fileName string, attrName string, data proto.Message) {
-	buf, err := proto.Marshal(data)
+func writeXattr(fileName string, attrName string, data proto.Message, buf []byte) []byte {
+	var err error
+	buf, err = proto.MarshalOptions{}.MarshalAppend(buf[:0], data)
 	check.E(err)
-	check.Efile("setxattr", fileName, unix.Setxattr(fileName, attrName, appendCrc(buf), 0))
+	buf = appendCrc(buf)
+	check.Efile("setxattr", fileName, unix.Setxattr(fileName, attrName, buf, 0))
+	return buf
 }

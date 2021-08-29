@@ -10,7 +10,7 @@ import (
 type FileWriter struct {
 	Open  func(fileName string, fileFlags int, filePerm os.FileMode) error
 	Write func([]byte) error
-	Close func(fileTimeNs int64) (*Attributes, error)
+	Close func(fileTimeNs int64) (Attr, error)
 }
 
 func NewFileWriter() FileWriter {
@@ -30,10 +30,9 @@ func NewFileWriter() FileWriter {
 			size += int64(len(data))
 			return err
 		},
-		func(fileTimeNs int64) (attr *Attributes, err error) {
+		func(fileTimeNs int64) (attr Attr, err error) {
 			defer check.Recover(&err)
 			check.E(file.Close())
-			attr = new(Attributes)
 			attr.Hash = gen.Sum(nil)
 			attr.TimeNs = fileTimeNs
 			attr.Size = size

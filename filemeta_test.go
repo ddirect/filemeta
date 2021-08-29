@@ -4,7 +4,6 @@ import (
 	"io/fs"
 	"path/filepath"
 	"reflect"
-	"syscall"
 	"testing"
 
 	"github.com/ddirect/check"
@@ -30,14 +29,13 @@ func checkCore(t *testing.T, op Op, base string, refFm filemap, stats ft.DirStat
 		},
 		func(data Data) {
 			check.E(data.Error)
-			fm[data.Path] = data.Attr.Hash
-			hashes[ToHashKey(data.Attr.Hash)] = struct{}{}
-			si := data.Info.Sys().(*syscall.Stat_t)
-			inodes[si.Ino] = struct{}{}
+			fm[data.Path] = data.Hash
+			hashes[ToHashKey(data.Hash)] = struct{}{}
+			inodes[data.Info.Inode] = struct{}{}
 		},
 		func() {
 			if !reflect.DeepEqual(fm, refFm) {
-				t.Fatal(OpString(op), "failed")
+				t.Fatal(op, "failed")
 			}
 			if len(hashes) != stats.UniqueHashes {
 				t.Fatalf("hash count mismatch: %d != %d", len(hashes), stats.UniqueHashes)
