@@ -31,7 +31,7 @@ func checkCore(t *testing.T, op Op, base string, refFm filemap, stats ft.DirStat
 			check.E(data.Error)
 			fm[data.Path] = data.Hash
 			hashes[ToHashKey(data.Hash)] = struct{}{}
-			inodes[data.Info.Inode] = struct{}{}
+			inodes[data.Inode] = struct{}{}
 		},
 		func() {
 			if !reflect.DeepEqual(fm, refFm) {

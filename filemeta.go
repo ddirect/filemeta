@@ -33,11 +33,10 @@ func (op Op) String() string {
 
 func core(m Op, fileName string) (d Data) {
 	d.Operation = m
-	d.Path = fileName
-	if d.Info, d.Error = sys.Stat(fileName); d.Error != nil {
+	if d.FileInfo, d.Error = sys.Stat(fileName); d.Error != nil {
 		return
 	}
-	if !d.Info.Mode.IsRegular() {
+	if !d.Mode.IsRegular() {
 		d.Error = fmt.Errorf("'%s' is not regular", fileName)
 		return
 	}
@@ -47,7 +46,7 @@ func core(m Op, fileName string) (d Data) {
 		d.Error = err
 		return
 	}
-	if err != nil || attr.Size != d.Info.Size || attr.TimeNs != d.Info.ModTimeNs {
+	if err != nil || attr.Size != d.Size || attr.TimeNs != d.ModTimeNs {
 		d.Changed = err == nil
 		if m != OpRefresh {
 			return
@@ -65,7 +64,7 @@ func Operation(op Op, fileName string) (data Data) {
 	if data.hashNeeded {
 		h := getHasher()
 		defer h.done()
-		data.notifyHash(h.run(fileName, data.Info.Size))
+		data.notifyHash(h.run(fileName, data.Size))
 	}
 	return
 }

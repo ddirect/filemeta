@@ -10,8 +10,7 @@ import (
 )
 
 type Data struct {
-	Path         string
-	Info         sys.FileInfo
+	sys.FileInfo
 	Hash         []byte
 	Error        error
 	Operation    Op
@@ -31,21 +30,21 @@ func (d *Data) Rename(newPath string) (err error) {
 func (d *Data) SetModTime(tim time.Time) (err error) {
 	defer check.Recover(&err)
 	check.E(os.Chtimes(d.Path, time.Now(), tim))
-	d.Info.ModTimeNs = tim.UnixNano()
+	d.ModTimeNs = tim.UnixNano()
 	d.writeAttributes()
 	return
 }
 
 func (d *Data) GetModTime() time.Time {
-	return time.Unix(0, d.Info.ModTimeNs)
+	return time.Unix(0, d.ModTimeNs)
 }
 
 func (d *Data) GetAttr() Attr {
-	return Attr{d.Info.Size, d.Info.ModTimeNs, d.Hash}
+	return Attr{d.Size, d.ModTimeNs, d.Hash}
 }
 
 func (d *Data) writeAttributes() {
-	mode := d.Info.Mode.Perm()
+	mode := d.Mode.Perm()
 	neededMode := mode | 0200
 	if mode != neededMode {
 		check.E(os.Chmod(d.Path, neededMode))
