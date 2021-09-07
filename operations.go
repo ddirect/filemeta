@@ -18,7 +18,7 @@ func AsyncOperations(op Op, probeThreads int, hashThreads int) Async {
 		probeThreads = runtime.NumCPU()
 	}
 	if hashThreads < 1 {
-		hashThreads = probeThreads
+		hashThreads = 1
 	}
 	bufSize := probeThreads * 500
 	fileIn := make(chan string, bufSize)
