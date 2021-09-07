@@ -1,9 +1,13 @@
 package filemeta
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/ddirect/check"
 	"github.com/ddirect/sys"
+	"google.golang.org/protobuf/proto"
 )
 
 type Op int8
@@ -89,13 +93,14 @@ func Refresh(fileName string) Data {
 	return Operation(OpRefresh, fileName)
 }
 
-/*
-func customCore(fileName string, attrName string, data proto.Message, core func(string, string, proto.Message)) (err error) {
+func customCore(fileName string, attrName string, data proto.Message, core func(string, string, proto.Message, []byte) []byte) (err error) {
 	if attrName == "" {
 		return errors.New("attribute name cannot be empty")
 	}
 	defer check.Recover(&err)
-	core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, strings.ToUpper(attrName)), data)
+	asd := attrPool.Get().(*attrSerDes)
+	defer attrPool.Put(asd)
+	asd.buf = core(fileName, fmt.Sprintf("%s.%s", fileMetaAttr, strings.ToUpper(attrName)), data, asd.buf)
 	return
 }
 
@@ -106,4 +111,3 @@ func ReadCustom(fileName string, attrName string, data proto.Message) error {
 func WriteCustom(fileName string, attrName string, data proto.Message) error {
 	return customCore(fileName, attrName, data, writeXattr)
 }
-*/
