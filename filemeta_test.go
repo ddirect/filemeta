@@ -62,8 +62,10 @@ func testAsyncOp(op Op, walk func(func(string)), core func(Data), epilogue func(
 }
 
 func testSyncOp(op Op, walk func(func(string)), core func(Data), epilogue func()) {
+	run, done := SyncOperations(op)
+	defer done()
 	walk(func(path string) {
-		core(Operation(op, path))
+		core(run(path))
 	})
 	epilogue()
 }

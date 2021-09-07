@@ -69,16 +69,31 @@ func AsyncMono(op Op) Async {
 	fileIn := make(chan string, bufSize)
 	dataOut := make(chan Data, bufSize)
 	go func() {
-		h := getHasher()
-		defer h.done()
+		run, done := SyncOperations(op)
+		defer done()
 		for file := range fileIn {
-			data := core(op, file)
-			if data.hashNeeded {
-				data.notifyHash(h.run(file, data.Size))
-			}
-			dataOut <- data
+			dataOut <- run(file)
 		}
 		close(dataOut)
 	}()
 	return Async{fileIn, dataOut}
+}
+
+func SyncOperations(op Op) (func(string) Data, func()) {
+	var h *hasher
+	return func(file string) (data Data) {
+			data = core(op, file)
+			if data.hashNeeded {
+				if h == nil {
+					h = getHasher()
+				}
+				data.notifyHash(h.run(file, data.Size))
+			}
+			return
+		}, func() {
+			if h != nil {
+				h.done()
+				h = nil
+			}
+		}
 }
