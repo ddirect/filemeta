@@ -2,22 +2,12 @@ module github.com/ddirect/filemeta
 
 go 1.16
 
-replace github.com/ddirect/check => ../check
-
-replace github.com/ddirect/filetest => ../filetest
-
-replace github.com/ddirect/xrand => ../xrand
-
-replace github.com/ddirect/format => ../format
-
-replace github.com/ddirect/sys => ../sys
-
 require (
-	github.com/ddirect/check v0.0.0-00010101000000-000000000000
-	github.com/ddirect/filetest v0.0.0-00010101000000-000000000000
-	github.com/ddirect/sys v0.0.0-00010101000000-000000000000
-	github.com/ddirect/xrand v0.0.0-00010101000000-000000000000
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
-	golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55
-	google.golang.org/protobuf v1.27.1
+	github.com/ddirect/check v0.1.0
+	github.com/ddirect/filetest v0.1.0
+	github.com/ddirect/sys v0.1.0
+	github.com/ddirect/xrand v0.1.0
+	golang.org/x/crypto v0.11.0
+	golang.org/x/sys v0.10.0
+	google.golang.org/protobuf v1.31.0
 )
